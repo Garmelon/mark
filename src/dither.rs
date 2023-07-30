@@ -5,14 +5,11 @@
 //! compares two colors. Instead, a version of each algorithm should be compiled
 //! for each color space and difference combination.
 
-use std::{
-    marker::PhantomData,
-    ops::{Add, Mul, Sub},
-};
+use std::marker::PhantomData;
 
 use image::RgbaImage;
 use palette::{
-    color_difference::{Ciede2000, EuclideanDistance, HyAb},
+    color_difference::{Ciede2000, HyAb},
     Clamp, IntoColor, Lab, Srgb,
 };
 use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -39,9 +36,12 @@ impl<C: Clamp, D: Difference<C>> Difference<C> for DiffClamp<D> {
 
 pub struct DiffEuclid;
 
-impl<C: EuclideanDistance<Scalar = f32>> Difference<C> for DiffEuclid {
+impl<C: AsRef<[f32; 3]>> Difference<C> for DiffEuclid {
     fn diff(a: C, b: C) -> f32 {
-        a.distance(b)
+        let [a1, a2, a3] = a.as_ref();
+        let [b1, b2, b3] = b.as_ref();
+        let squared = (a1 - b1).powi(2) + (a2 - b2).powi(2) + (a3 - b3).powi(2);
+        squared.sqrt()
     }
 }
 
@@ -167,11 +167,36 @@ where
     }
 }
 
+fn add<C: AsMut<[f32; 3]>>(mut a: C, mut b: C) -> C {
+    let [a1, a2, a3] = a.as_mut();
+    let [b1, b2, b3] = b.as_mut();
+    *a1 += *b1;
+    *a2 += *b2;
+    *a3 += *b3;
+    a
+}
+
+fn sub<C: AsMut<[f32; 3]>>(mut a: C, mut b: C) -> C {
+    let [a1, a2, a3] = a.as_mut();
+    let [b1, b2, b3] = b.as_mut();
+    *a1 -= *b1;
+    *a2 -= *b2;
+    *a3 -= *b3;
+    a
+}
+
+fn mul<C: AsMut<[f32; 3]>>(mut a: C, b: f32) -> C {
+    let [a1, a2, a3] = a.as_mut();
+    *a1 *= b;
+    *a2 *= b;
+    *a3 *= b;
+    a
+}
+
 fn diffuse_error<C>(image: &mut RgbaImage, error: C, x: u32, y: u32, dx: i32, dy: i32, factor: f32)
 where
-    C: Add<Output = C>,
+    C: AsMut<[f32; 3]>,
     C: IntoColor<Srgb>,
-    C: Mul<f32, Output = C>,
     Srgb: IntoColor<C>,
 {
     if x == 0 && dx < 0 {
@@ -184,7 +209,7 @@ where
     let y = (y as i32 + dy) as u32;
     let Some(pixel) = image.get_pixel_mut_checked(x, y) else{ return; };
     let color: C = util::pixel_to_color(*pixel);
-    let color = color + error * factor;
+    let color = add(color, mul(error, factor));
     util::update_pixel_with_color(pixel, color);
 }
 
@@ -192,11 +217,9 @@ pub struct AlgoFloydSteinberg;
 
 impl<C, D> Algorithm<C, D> for AlgoFloydSteinberg
 where
-    C: Add<Output = C>,
+    C: AsMut<[f32; 3]>,
     C: Copy,
     C: IntoColor<Srgb>,
-    C: Mul<f32, Output = C>,
-    C: Sub<Output = C>,
     D: Difference<C>,
     Srgb: IntoColor<C>,
 {
@@ -206,7 +229,7 @@ where
                 let pixel = image.get_pixel(x, y);
                 let before: C = util::pixel_to_color(*pixel);
                 let after = palette.nearest::<D>(before);
-                let error = before - after;
+                let error = sub(before, after);
 
                 util::update_pixel_with_color(image.get_pixel_mut(x, y), after);
                 diffuse_error(&mut image, error, x, y, 1, 0, 7.0 / 16.0);
@@ -224,11 +247,9 @@ pub struct AlgoStucki;
 
 impl<C, D> Algorithm<C, D> for AlgoStucki
 where
-    C: Add<Output = C>,
+    C: AsMut<[f32; 3]>,
     C: Copy,
     C: IntoColor<Srgb>,
-    C: Mul<f32, Output = C>,
-    C: Sub<Output = C>,
     D: Difference<C>,
     Srgb: IntoColor<C>,
 {
@@ -238,7 +259,7 @@ where
                 let pixel = image.get_pixel(x, y);
                 let before: C = util::pixel_to_color(*pixel);
                 let after = palette.nearest::<D>(before);
-                let error = before - after;
+                let error = sub(before, after);
 
                 util::update_pixel_with_color(image.get_pixel_mut(x, y), after);
 

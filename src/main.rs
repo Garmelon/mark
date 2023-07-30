@@ -14,7 +14,6 @@ use std::{
     fmt,
     io::{Cursor, Read, Write},
     num::ParseIntError,
-    ops::{Add, Mul, Sub},
     path::PathBuf,
     str::FromStr,
 };
@@ -25,10 +24,10 @@ use mark::{
     bw,
     dither::{
         AlgoFloydSteinberg, AlgoRandom, AlgoStucki, AlgoThreshold, Algorithm, DiffCiede2000,
-        DiffClamp, DiffEuclid, DiffHyAb, DiffManhattan, DiffManhattanSquare, Difference, Palette,
+        DiffClamp, DiffEuclid, DiffHyAb, DiffManhattan, Difference, Palette,
     },
 };
-use palette::{color_difference::EuclideanDistance, Clamp, IntoColor, Lab, LinSrgb, Oklab, Srgb};
+use palette::{Clamp, IntoColor, Lab, Lch, LinSrgb, Luv, Okhsl, Okhsv, Oklab, Srgb};
 
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
 enum BwMethod {
@@ -80,7 +79,11 @@ enum DitherColorSpace {
     Srgb,
     LinSrgb,
     Cielab,
+    Cieluv,
+    Cielch,
     Oklab,
+    Okhsl,
+    Okhsv,
 }
 
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
@@ -153,22 +156,22 @@ impl DitherCmd {
             DitherColorSpace::Srgb => self.run_c::<Srgb>(image),
             DitherColorSpace::LinSrgb => self.run_c::<LinSrgb>(image),
             DitherColorSpace::Cielab => self.run_c::<Lab>(image),
+            DitherColorSpace::Cieluv => self.run_c::<Lch>(image),
+            DitherColorSpace::Cielch => self.run_c::<Luv>(image),
             DitherColorSpace::Oklab => self.run_c::<Oklab>(image),
+            DitherColorSpace::Okhsl => self.run_c::<Okhsl>(image),
+            DitherColorSpace::Okhsv => self.run_c::<Okhsv>(image),
         }
     }
 
     fn run_c<C>(self, image: RgbaImage) -> RgbaImage
     where
-        C: Add<C, Output = C>,
         C: AsMut<[f32; 3]>,
         C: AsRef<[f32; 3]>,
         C: Clamp,
         C: Copy,
-        C: EuclideanDistance<Scalar = f32>,
         C: IntoColor<Lab>,
         C: IntoColor<Srgb>,
-        C: Mul<f32, Output = C>,
-        C: Sub<C, Output = C>,
         Srgb: IntoColor<C>,
     {
         use DitherDifference::*;
@@ -186,13 +189,10 @@ impl DitherCmd {
 
     fn run_cd<C, D>(self, image: RgbaImage) -> RgbaImage
     where
-        C: Add<C, Output = C>,
         C: AsMut<[f32; 3]>,
         C: Clamp,
         C: Copy,
         C: IntoColor<Srgb>,
-        C: Mul<f32, Output = C>,
-        C: Sub<C, Output = C>,
         D: Difference<C>,
         Srgb: IntoColor<C>,
     {
