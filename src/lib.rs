@@ -10,4 +10,5 @@
 #![warn(clippy::use_self)]
 
 pub mod bw;
+pub mod dither;
 mod util;

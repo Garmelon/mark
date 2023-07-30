@@ -10,13 +10,24 @@
 #![warn(clippy::use_self)]
 
 use std::{
+    error::Error,
+    fmt,
     io::{Cursor, Read, Write},
+    num::ParseIntError,
     path::PathBuf,
+    str::FromStr,
 };
 
 use clap::Parser;
 use image::{ImageFormat, RgbaImage};
-use mark::bw;
+use mark::{
+    bw,
+    dither::{
+        AlgoThreshold, Algorithm, DiffCiede2000, DiffClamp, DiffEuclid, DiffHyAb, DiffManhattan,
+        DiffManhattanSquare, Difference, Palette,
+    },
+};
+use palette::{color_difference::EuclideanDistance, Clamp, IntoColor, Lab, LinSrgb, Oklab, Srgb};
 
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
 enum BwMethod {
@@ -55,15 +66,158 @@ impl BwCmd {
     }
 }
 
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+enum DitherAlgorithm {
+    Threshold,
+}
+
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+enum DitherColorSpace {
+    Srgb,
+    LinSrgb,
+    Cielab,
+    Oklab,
+}
+
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+enum DitherDifference {
+    Euclid,
+    EuclidClamp,
+    HyAb,
+    HyAbClamp,
+    Ciede2000,
+    Ciede2000Clamp,
+    Manhattan,
+    ManhattanClamp,
+    ManhattanSquare,
+    ManhattanSquareClamp,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct SrgbColor(Srgb<u8>);
+
+#[derive(Debug)]
+enum ParseSrgbColorError {
+    ThreeValuesRequired,
+    ParseIntError(ParseIntError),
+}
+
+impl fmt::Display for ParseSrgbColorError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::ThreeValuesRequired => write!(f, "exactly three values must be specified"),
+            Self::ParseIntError(e) => e.fmt(f),
+        }
+    }
+}
+
+impl Error for ParseSrgbColorError {}
+
+impl From<ParseIntError> for ParseSrgbColorError {
+    fn from(value: ParseIntError) -> Self {
+        Self::ParseIntError(value)
+    }
+}
+
+impl FromStr for SrgbColor {
+    type Err = ParseSrgbColorError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts = s.split(',').collect::<Vec<_>>();
+        if let [r, g, b] = &*parts {
+            Ok(Self(Srgb::new(r.parse()?, g.parse()?, b.parse()?)))
+        } else {
+            Err(ParseSrgbColorError::ThreeValuesRequired)
+        }
+    }
+}
+
+#[derive(Debug, clap::Parser)]
+/// Dither images.
+struct DitherCmd {
+    #[arg(long, short)]
+    algorithm: DitherAlgorithm,
+    #[arg(long, short)]
+    color_space: DitherColorSpace,
+    #[arg(long, short)]
+    difference: DitherDifference,
+    #[arg(long, short)]
+    palette: Vec<SrgbColor>,
+}
+
+impl DitherCmd {
+    fn run(self, image: RgbaImage) -> RgbaImage {
+        match self.color_space {
+            DitherColorSpace::Srgb => self.run_c::<Srgb>(image),
+            DitherColorSpace::LinSrgb => self.run_c::<LinSrgb>(image),
+            DitherColorSpace::Cielab => self.run_c::<Lab>(image),
+            DitherColorSpace::Oklab => self.run_c::<Oklab>(image),
+        }
+    }
+
+    fn run_c<C>(self, image: RgbaImage) -> RgbaImage
+    where
+        Srgb: IntoColor<C>,
+        C: AsRef<[f32; 3]>,
+        C: Clamp,
+        C: Copy,
+        C: EuclideanDistance<Scalar = f32>,
+        C: IntoColor<Lab>,
+        C: IntoColor<Srgb>,
+    {
+        match self.difference {
+            DitherDifference::Euclid => self.run_cd::<C, DiffEuclid>(image),
+            DitherDifference::EuclidClamp => self.run_cd::<C, DiffClamp<DiffEuclid>>(image),
+            DitherDifference::HyAb => self.run_cd::<C, DiffHyAb>(image),
+            DitherDifference::HyAbClamp => self.run_cd::<C, DiffClamp<DiffHyAb>>(image),
+            DitherDifference::Ciede2000 => self.run_cd::<C, DiffCiede2000>(image),
+            DitherDifference::Ciede2000Clamp => self.run_cd::<C, DiffClamp<DiffCiede2000>>(image),
+            DitherDifference::Manhattan => self.run_cd::<C, DiffManhattan>(image),
+            DitherDifference::ManhattanClamp => self.run_cd::<C, DiffClamp<DiffManhattan>>(image),
+            DitherDifference::ManhattanSquare => self.run_cd::<C, DiffManhattanSquare>(image),
+            DitherDifference::ManhattanSquareClamp => {
+                self.run_cd::<C, DiffClamp<DiffManhattanSquare>>(image)
+            }
+        }
+    }
+
+    fn run_cd<C, D>(self, image: RgbaImage) -> RgbaImage
+    where
+        Srgb: IntoColor<C>,
+        C: IntoColor<Srgb> + Clamp + Copy,
+        D: Difference<C>,
+    {
+        match self.algorithm {
+            DitherAlgorithm::Threshold => self.run_acd::<AlgoThreshold, C, D>(image),
+        }
+    }
+
+    fn run_acd<A, C, D>(self, image: RgbaImage) -> RgbaImage
+    where
+        Srgb: IntoColor<C>,
+        A: Algorithm<C, D>,
+    {
+        let colors = self
+            .palette
+            .into_iter()
+            .map(|c| c.0.into_format().into_color())
+            .collect::<Vec<C>>();
+        let palette = Palette::<C>::new(colors);
+        A::run(image, palette)
+    }
+}
+
 #[derive(Debug, clap::Parser)]
 enum Cmd {
     Bw(BwCmd),
+    Dither(DitherCmd),
 }
 
 impl Cmd {
     fn run(self, image: RgbaImage) -> RgbaImage {
         match self {
             Self::Bw(cmd) => cmd.run(image),
+            Self::Dither(cmd) => cmd.run(image),
         }
     }
 }
