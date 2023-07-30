@@ -5,6 +5,7 @@ use std::{
 
 use clap::Parser;
 use image::{ImageFormat, RgbaImage};
+use mark::bw;
 
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
 enum BwMethod {
@@ -16,15 +17,15 @@ enum BwMethod {
     Oklab,
 }
 
-impl From<BwMethod> for mark::BwMethod {
+impl From<BwMethod> for bw::Method {
     fn from(value: BwMethod) -> Self {
         match value {
-            BwMethod::SrgbAverage => mark::BwMethod::SrgbAverage,
-            BwMethod::LinSrgbAverage => mark::BwMethod::LinSrgbAverage,
-            BwMethod::Hsl => mark::BwMethod::Hsl,
-            BwMethod::Hsv => mark::BwMethod::Hsv,
-            BwMethod::Cielab => mark::BwMethod::Cielab,
-            BwMethod::Oklab => mark::BwMethod::Oklab,
+            BwMethod::SrgbAverage => bw::Method::SrgbAverage,
+            BwMethod::LinSrgbAverage => bw::Method::LinSrgbAverage,
+            BwMethod::Hsl => bw::Method::Hsl,
+            BwMethod::Hsv => bw::Method::Hsv,
+            BwMethod::Cielab => bw::Method::Cielab,
+            BwMethod::Oklab => bw::Method::Oklab,
         }
     }
 }
@@ -38,7 +39,7 @@ struct BwCmd {
 
 impl BwCmd {
     fn run(self, mut image: RgbaImage) -> RgbaImage {
-        mark::bw(&mut image, self.method.into());
+        bw::bw(&mut image, self.method.into());
         image
     }
 }
