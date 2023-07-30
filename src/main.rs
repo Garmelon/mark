@@ -6,13 +6,52 @@ use std::{
 use clap::Parser;
 use image::{ImageFormat, RgbaImage};
 
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+enum BwMethod {
+    SrgbAverage,
+    LinSrgbAverage,
+    Hsl,
+    Cielab,
+    Oklab,
+}
+
+impl From<BwMethod> for mark::BwMethod {
+    fn from(value: BwMethod) -> Self {
+        match value {
+            BwMethod::SrgbAverage => mark::BwMethod::SrgbAverage,
+            BwMethod::LinSrgbAverage => mark::BwMethod::LinSrgbAverage,
+            BwMethod::Hsl => mark::BwMethod::Hsl,
+            BwMethod::Cielab => mark::BwMethod::Cielab,
+            BwMethod::Oklab => mark::BwMethod::Oklab,
+        }
+    }
+}
+
 #[derive(Debug, clap::Parser)]
 /// Convert images into black and white.
-struct BwCmd {}
+struct BwCmd {
+    #[arg(long, short)]
+    method: BwMethod,
+}
+
+impl BwCmd {
+    fn run(self, mut image: RgbaImage) -> RgbaImage {
+        mark::bw(&mut image, self.method.into());
+        image
+    }
+}
 
 #[derive(Debug, clap::Parser)]
 enum Cmd {
     Bw(BwCmd),
+}
+
+impl Cmd {
+    fn run(self, image: RgbaImage) -> RgbaImage {
+        match self {
+            Cmd::Bw(cmd) => cmd.run(image),
+        }
+    }
 }
 
 #[derive(Debug, clap::Parser)]
@@ -70,5 +109,6 @@ fn save_image(out: &Option<PathBuf>, image: RgbaImage) {
 fn main() {
     let args = Args::parse();
     let image = load_image(&args.r#in);
+    let image = args.cmd.run(image);
     save_image(&args.out, image);
 }
