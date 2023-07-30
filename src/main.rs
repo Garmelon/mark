@@ -1,8 +1,13 @@
-use std::path::PathBuf;
+use std::{
+    io::{Cursor, Read, Write},
+    path::PathBuf,
+};
 
 use clap::Parser;
+use image::{ImageFormat, RgbaImage};
 
 #[derive(Debug, clap::Parser)]
+/// Convert images into black and white.
 struct BwCmd {}
 
 #[derive(Debug, clap::Parser)]
@@ -12,15 +17,58 @@ enum Cmd {
 
 #[derive(Debug, clap::Parser)]
 struct Args {
+    /// Load image from file instead of stdin.
     #[arg(long, short)]
     r#in: Option<PathBuf>,
+
+    /// Output image to file instead of stdout.
     #[arg(long, short)]
     out: Option<PathBuf>,
+
     #[command(subcommand)]
     cmd: Cmd,
 }
 
+fn load_image(r#in: &Option<PathBuf>) -> RgbaImage {
+    if let Some(path) = r#in {
+        eprintln!("Loading image from {}", path.display());
+        image::io::Reader::open(path)
+            .expect("failed to load image from file")
+            .decode()
+            .expect("failed to decode image data")
+    } else {
+        eprintln!("Loading image from stdin");
+        let mut buf = vec![];
+        std::io::stdin()
+            .read_to_end(&mut buf)
+            .expect("failed to read stdin");
+        image::io::Reader::new(Cursor::new(buf))
+            .with_guessed_format()
+            .expect("failed to guess image format")
+            .decode()
+            .expect("failed to decode image data")
+    }
+    .into_rgba8()
+}
+
+fn save_image(out: &Option<PathBuf>, image: RgbaImage) {
+    if let Some(path) = out {
+        eprintln!("Writing image to {}", path.display());
+        image.save(path).expect("failed to save image to file");
+    } else {
+        eprintln!("Writing image to stdout");
+        let mut buf = vec![];
+        image
+            .write_to(&mut Cursor::new(&mut buf), ImageFormat::Png)
+            .expect("failed to export image to bytes");
+        std::io::stdout()
+            .write_all(&buf)
+            .expect("failed to write image to stdout");
+    }
+}
+
 fn main() {
     let args = Args::parse();
-    println!("{args:#?}");
+    let image = load_image(&args.r#in);
+    save_image(&args.out, image);
 }
