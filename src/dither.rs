@@ -177,47 +177,28 @@ where
     }
 }
 
-pub struct AlgoFloydSteinberg;
-
-impl AlgoFloydSteinberg {
-    fn update_pixel<C, D>(image: &mut RgbaImage, palette: &Palette<C>, x: u32, y: u32)
-    where
-        C: Copy,
-        C: IntoColor<Srgb>,
-        C: Sub<Output = C>,
-        D: Difference<C>,
-        Srgb: IntoColor<C>,
-        C: Add<Output = C>,
-        C: Mul<f32, Output = C>,
-    {
-        let pixel = image.get_pixel(x, y);
-        let before: C = util::pixel_to_color(*pixel);
-        let after = palette.nearest::<D>(before);
-        let error = after - before;
-
-        util::update_pixel_with_color(image.get_pixel_mut(x, y), after);
-        Self::diffuse_error(image, x + 1, y, error, 7.0 / 16.0);
-        if x > 0 {
-            Self::diffuse_error(image, x - 1, y + 1, error, 3.0 / 16.0);
-        }
-        Self::diffuse_error(image, x, y + 1, error, 5.0 / 16.0);
-        Self::diffuse_error(image, x + 1, y + 1, error, 1.0 / 16.0);
+fn diffuse_error<C>(image: &mut RgbaImage, error: C, x: u32, y: u32, dx: i32, dy: i32, factor: f32)
+where
+    C: Add<Output = C>,
+    C: IntoColor<Srgb>,
+    C: Mul<f32, Output = C>,
+    Srgb: IntoColor<C>,
+{
+    if x == 0 && dx < 0 {
+        return;
     }
-
-    fn diffuse_error<C>(image: &mut RgbaImage, x: u32, y: u32, error: C, factor: f32)
-    where
-        C: Add<Output = C>,
-        C: IntoColor<Srgb>,
-        C: Mul<f32, Output = C>,
-        Srgb: IntoColor<C>,
-    {
-        if let Some(pixel) = image.get_pixel_mut_checked(x, y) {
-            let color: C = util::pixel_to_color(*pixel);
-            let color = color + error * factor;
-            util::update_pixel_with_color(pixel, color);
-        }
+    if y == 0 && dy < 0 {
+        return;
     }
+    let x = (x as i32 + dx) as u32;
+    let y = (y as i32 + dy) as u32;
+    let Some(pixel) = image.get_pixel_mut_checked(x, y) else{ return; };
+    let color: C = util::pixel_to_color(*pixel);
+    let color = color + error * factor;
+    util::update_pixel_with_color(pixel, color);
 }
+
+pub struct AlgoFloydSteinberg;
 
 impl<C, D> Algorithm<C, D> for AlgoFloydSteinberg
 where
@@ -232,9 +213,64 @@ where
     fn run(mut image: RgbaImage, palette: Palette<C>) -> RgbaImage {
         for y in 0..image.height() {
             for x in 0..image.width() {
-                Self::update_pixel::<C, D>(&mut image, &palette, x, y);
+                let pixel = image.get_pixel(x, y);
+                let before: C = util::pixel_to_color(*pixel);
+                let after = palette.nearest::<D>(before);
+                let error = before - after;
+
+                util::update_pixel_with_color(image.get_pixel_mut(x, y), after);
+                diffuse_error(&mut image, error, x, y, 1, 0, 7.0 / 16.0);
+                diffuse_error(&mut image, error, x, y, -1, 1, 3.0 / 16.0);
+                diffuse_error(&mut image, error, x, y, 0, 1, 5.0 / 16.0);
+                diffuse_error(&mut image, error, x, y, 1, 1, 1.0 / 16.0);
             }
         }
+
+        image
+    }
+}
+
+pub struct AlgoStucki;
+
+impl<C, D> Algorithm<C, D> for AlgoStucki
+where
+    C: Add<Output = C>,
+    C: Copy,
+    C: IntoColor<Srgb>,
+    C: Mul<f32, Output = C>,
+    C: Sub<Output = C>,
+    D: Difference<C>,
+    Srgb: IntoColor<C>,
+{
+    fn run(mut image: RgbaImage, palette: Palette<C>) -> RgbaImage {
+        for y in 0..image.height() {
+            for x in 0..image.width() {
+                let pixel = image.get_pixel(x, y);
+                let before: C = util::pixel_to_color(*pixel);
+                let after = palette.nearest::<D>(before);
+                let error = before - after;
+
+                util::update_pixel_with_color(image.get_pixel_mut(x, y), after);
+
+                let base = 42.;
+
+                diffuse_error(&mut image, error, x, y, 1, 0, 8. / base);
+                diffuse_error(&mut image, error, x, y, 2, 0, 4. / base);
+
+                diffuse_error(&mut image, error, x, y, -2, 1, 2. / base);
+                diffuse_error(&mut image, error, x, y, -1, 1, 4. / base);
+                diffuse_error(&mut image, error, x, y, 0, 1, 8. / base);
+                diffuse_error(&mut image, error, x, y, 1, 1, 4. / base);
+                diffuse_error(&mut image, error, x, y, 2, 1, 2. / base);
+
+                diffuse_error(&mut image, error, x, y, -2, 2, 1. / base);
+                diffuse_error(&mut image, error, x, y, -1, 2, 2. / base);
+                diffuse_error(&mut image, error, x, y, 0, 2, 4. / base);
+                diffuse_error(&mut image, error, x, y, 1, 2, 2. / base);
+                diffuse_error(&mut image, error, x, y, 2, 2, 1. / base);
+            }
+        }
+
         image
     }
 }

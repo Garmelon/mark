@@ -24,8 +24,8 @@ use image::{ImageFormat, RgbaImage};
 use mark::{
     bw,
     dither::{
-        AlgoFloydSteinberg, AlgoRandom, AlgoThreshold, Algorithm, DiffCiede2000, DiffClamp,
-        DiffEuclid, DiffHyAb, DiffManhattan, DiffManhattanSquare, Difference, Palette,
+        AlgoFloydSteinberg, AlgoRandom, AlgoStucki, AlgoThreshold, Algorithm, DiffCiede2000,
+        DiffClamp, DiffEuclid, DiffHyAb, DiffManhattan, DiffManhattanSquare, Difference, Palette,
     },
 };
 use palette::{color_difference::EuclideanDistance, Clamp, IntoColor, Lab, LinSrgb, Oklab, Srgb};
@@ -72,6 +72,7 @@ enum DitherAlgorithm {
     Threshold,
     Random,
     FloydSteinberg,
+    Stucki,
 }
 
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
@@ -205,6 +206,7 @@ impl DitherCmd {
             Threshold => self.run_acd::<AlgoThreshold, C, D>(image),
             Random => self.run_acd::<AlgoRandom, C, D>(image),
             FloydSteinberg => self.run_acd::<AlgoFloydSteinberg, C, D>(image),
+            Stucki => self.run_acd::<AlgoStucki, C, D>(image),
         }
     }
 
