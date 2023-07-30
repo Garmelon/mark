@@ -75,16 +75,6 @@ impl<C: AsRef<[f32; 3]>> Difference<C> for DiffManhattan {
     }
 }
 
-pub struct DiffManhattanSquare;
-
-impl<C: AsRef<[f32; 3]>> Difference<C> for DiffManhattanSquare {
-    fn diff(a: C, b: C) -> f32 {
-        let [a1, a2, a3] = a.as_ref();
-        let [b1, b2, b3] = b.as_ref();
-        (a1 - b1).powi(2) + (a2 - b2).powi(2) + (a3 - b3).powi(3)
-    }
-}
-
 /////////////
 // Palette //
 /////////////

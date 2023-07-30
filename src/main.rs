@@ -93,8 +93,6 @@ enum DitherDifference {
     Ciede2000Clamp,
     Manhattan,
     ManhattanClamp,
-    ManhattanSquare,
-    ManhattanSquareClamp,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -173,19 +171,16 @@ impl DitherCmd {
         C: Sub<C, Output = C>,
         Srgb: IntoColor<C>,
     {
+        use DitherDifference::*;
         match self.difference {
-            DitherDifference::Euclid => self.run_cd::<C, DiffEuclid>(image),
-            DitherDifference::EuclidClamp => self.run_cd::<C, DiffClamp<DiffEuclid>>(image),
-            DitherDifference::HyAb => self.run_cd::<C, DiffHyAb>(image),
-            DitherDifference::HyAbClamp => self.run_cd::<C, DiffClamp<DiffHyAb>>(image),
-            DitherDifference::Ciede2000 => self.run_cd::<C, DiffCiede2000>(image),
-            DitherDifference::Ciede2000Clamp => self.run_cd::<C, DiffClamp<DiffCiede2000>>(image),
-            DitherDifference::Manhattan => self.run_cd::<C, DiffManhattan>(image),
-            DitherDifference::ManhattanClamp => self.run_cd::<C, DiffClamp<DiffManhattan>>(image),
-            DitherDifference::ManhattanSquare => self.run_cd::<C, DiffManhattanSquare>(image),
-            DitherDifference::ManhattanSquareClamp => {
-                self.run_cd::<C, DiffClamp<DiffManhattanSquare>>(image)
-            }
+            Euclid => self.run_cd::<C, DiffEuclid>(image),
+            EuclidClamp => self.run_cd::<C, DiffClamp<DiffEuclid>>(image),
+            HyAb => self.run_cd::<C, DiffHyAb>(image),
+            HyAbClamp => self.run_cd::<C, DiffClamp<DiffHyAb>>(image),
+            Ciede2000 => self.run_cd::<C, DiffCiede2000>(image),
+            Ciede2000Clamp => self.run_cd::<C, DiffClamp<DiffCiede2000>>(image),
+            Manhattan => self.run_cd::<C, DiffManhattan>(image),
+            ManhattanClamp => self.run_cd::<C, DiffClamp<DiffManhattan>>(image),
         }
     }
 
