@@ -23,8 +23,8 @@ use image::{ImageFormat, RgbaImage};
 use mark::{
     bw,
     dither::{
-        AlgoThreshold, Algorithm, DiffCiede2000, DiffClamp, DiffEuclid, DiffHyAb, DiffManhattan,
-        DiffManhattanSquare, Difference, Palette,
+        AlgoRandom, AlgoThreshold, Algorithm, DiffCiede2000, DiffClamp, DiffEuclid, DiffHyAb,
+        DiffManhattan, DiffManhattanSquare, Difference, Palette,
     },
 };
 use palette::{color_difference::EuclideanDistance, Clamp, IntoColor, Lab, LinSrgb, Oklab, Srgb};
@@ -69,6 +69,7 @@ impl BwCmd {
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
 enum DitherAlgorithm {
     Threshold,
+    Random,
 }
 
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
@@ -158,6 +159,7 @@ impl DitherCmd {
     fn run_c<C>(self, image: RgbaImage) -> RgbaImage
     where
         Srgb: IntoColor<C>,
+        C: AsMut<[f32; 3]>,
         C: AsRef<[f32; 3]>,
         C: Clamp,
         C: Copy,
@@ -184,11 +186,15 @@ impl DitherCmd {
     fn run_cd<C, D>(self, image: RgbaImage) -> RgbaImage
     where
         Srgb: IntoColor<C>,
-        C: IntoColor<Srgb> + Clamp + Copy,
+        C: AsMut<[f32; 3]>,
+        C: Clamp,
+        C: Copy,
+        C: IntoColor<Srgb>,
         D: Difference<C>,
     {
         match self.algorithm {
             DitherAlgorithm::Threshold => self.run_acd::<AlgoThreshold, C, D>(image),
+            DitherAlgorithm::Random => self.run_acd::<AlgoRandom, C, D>(image),
         }
     }
 

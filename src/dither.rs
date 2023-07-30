@@ -12,6 +12,7 @@ use palette::{
     color_difference::{Ciede2000, EuclideanDistance, HyAb},
     Clamp, IntoColor, Lab, Srgb,
 };
+use rand::{rngs::SmallRng, Rng, SeedableRng};
 
 use crate::util;
 
@@ -122,12 +123,50 @@ pub struct AlgoThreshold;
 impl<C, D> Algorithm<C, D> for AlgoThreshold
 where
     Srgb: IntoColor<C>,
-    C: IntoColor<Srgb> + Copy,
+    C: Copy,
+    C: IntoColor<Srgb> ,
     D: Difference<C>,
 {
     fn run(mut image: RgbaImage, palette: Palette<C>) -> RgbaImage {
         for pixel in image.pixels_mut() {
             let color: C = util::pixel_to_color(*pixel);
+            let color = palette.nearest::<D>(color);
+            util::update_pixel_with_color(pixel, color);
+        }
+        image
+    }
+}
+
+// TODO Fix probability calculation
+//
+// Choose probability for each color such that the expected value of a pixel is
+// its actual color (or as close as possible).
+//
+// We want to represent a pixel as a linear combination of palette colors with
+// factors in the range [0, 1] that sum up to 1. Then we can use those factors
+// as probabilities. This may not work for every palette.
+//
+// As a secondary optimization target, we might want to miminize the amount of
+// nonzero factors, if possible.
+pub struct AlgoRandom;
+
+impl<C, D> Algorithm<C, D> for AlgoRandom
+where
+    Srgb: IntoColor<C>,
+    C: AsMut<[f32; 3]>,
+    C: Copy,
+    C: IntoColor<Srgb>,
+    D: Difference<C>,
+{
+    fn run(mut image: RgbaImage, palette: Palette<C>) -> RgbaImage {
+        let mut rng = SmallRng::seed_from_u64(0);
+        let range_radius = 1.0;
+
+        for pixel in image.pixels_mut() {
+            let mut color: C = util::pixel_to_color(*pixel);
+            color.as_mut()[0] += rng.gen_range(-range_radius..=range_radius);
+            color.as_mut()[1] += rng.gen_range(-range_radius..=range_radius);
+            color.as_mut()[2] += rng.gen_range(-range_radius..=range_radius);
             let color = palette.nearest::<D>(color);
             util::update_pixel_with_color(pixel, color);
         }

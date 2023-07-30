@@ -7,3 +7,4 @@ edition = "2021"
 clap = { version = "4.3.19", features = ["derive", "deprecated"] }
 image = "0.24.6"
 palette = "0.7.2"
+rand = { version = "0.8.5", features = ["small_rng"] }
