@@ -1,6 +1,8 @@
 use image::RgbaImage;
 use palette::{Hsl, Hsv, IntoColor, Lab, LinSrgb, Oklab, Srgb};
 
+use crate::util;
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Method {
     SrgbAverage,
@@ -51,11 +53,8 @@ impl Method {
 
 pub fn bw(image: &mut RgbaImage, method: Method) {
     for pixel in image.pixels_mut() {
-        let [r, g, b, _] = pixel.0;
-        let srgb = Srgb::new(r, g, b).into_format::<f32>();
-        let srgb = method.to_bw(srgb).into_format::<u8>();
-        pixel.0[0] = srgb.red;
-        pixel.0[1] = srgb.green;
-        pixel.0[2] = srgb.blue;
+        let srgb = util::pixel_to_srgb(*pixel);
+        let srgb = method.to_bw(srgb);
+        util::update_pixel_with_srgb(pixel, srgb);
     }
 }

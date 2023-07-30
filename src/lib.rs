@@ -10,3 +10,4 @@
 #![warn(clippy::use_self)]
 
 pub mod bw;
+mod util;
