@@ -14,6 +14,7 @@ use std::{
     fmt,
     io::{Cursor, Read, Write},
     num::ParseIntError,
+    ops::{Add, Mul, Sub},
     path::PathBuf,
     str::FromStr,
 };
@@ -23,8 +24,8 @@ use image::{ImageFormat, RgbaImage};
 use mark::{
     bw,
     dither::{
-        AlgoRandom, AlgoThreshold, Algorithm, DiffCiede2000, DiffClamp, DiffEuclid, DiffHyAb,
-        DiffManhattan, DiffManhattanSquare, Difference, Palette,
+        AlgoFloydSteinberg, AlgoRandom, AlgoThreshold, Algorithm, DiffCiede2000, DiffClamp,
+        DiffEuclid, DiffHyAb, DiffManhattan, DiffManhattanSquare, Difference, Palette,
     },
 };
 use palette::{color_difference::EuclideanDistance, Clamp, IntoColor, Lab, LinSrgb, Oklab, Srgb};
@@ -70,6 +71,7 @@ impl BwCmd {
 enum DitherAlgorithm {
     Threshold,
     Random,
+    FloydSteinberg,
 }
 
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
@@ -158,7 +160,7 @@ impl DitherCmd {
 
     fn run_c<C>(self, image: RgbaImage) -> RgbaImage
     where
-        Srgb: IntoColor<C>,
+        C: Add<C, Output = C>,
         C: AsMut<[f32; 3]>,
         C: AsRef<[f32; 3]>,
         C: Clamp,
@@ -166,6 +168,9 @@ impl DitherCmd {
         C: EuclideanDistance<Scalar = f32>,
         C: IntoColor<Lab>,
         C: IntoColor<Srgb>,
+        C: Mul<f32, Output = C>,
+        C: Sub<C, Output = C>,
+        Srgb: IntoColor<C>,
     {
         match self.difference {
             DitherDifference::Euclid => self.run_cd::<C, DiffEuclid>(image),
@@ -185,23 +190,28 @@ impl DitherCmd {
 
     fn run_cd<C, D>(self, image: RgbaImage) -> RgbaImage
     where
-        Srgb: IntoColor<C>,
+        C: Add<C, Output = C>,
         C: AsMut<[f32; 3]>,
         C: Clamp,
         C: Copy,
         C: IntoColor<Srgb>,
+        C: Mul<f32, Output = C>,
+        C: Sub<C, Output = C>,
         D: Difference<C>,
+        Srgb: IntoColor<C>,
     {
+        use DitherAlgorithm::*;
         match self.algorithm {
-            DitherAlgorithm::Threshold => self.run_acd::<AlgoThreshold, C, D>(image),
-            DitherAlgorithm::Random => self.run_acd::<AlgoRandom, C, D>(image),
+            Threshold => self.run_acd::<AlgoThreshold, C, D>(image),
+            Random => self.run_acd::<AlgoRandom, C, D>(image),
+            FloydSteinberg => self.run_acd::<AlgoFloydSteinberg, C, D>(image),
         }
     }
 
     fn run_acd<A, C, D>(self, image: RgbaImage) -> RgbaImage
     where
-        Srgb: IntoColor<C>,
         A: Algorithm<C, D>,
+        Srgb: IntoColor<C>,
     {
         let colors = self
             .palette

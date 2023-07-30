@@ -5,7 +5,10 @@
 //! compares two colors. Instead, a version of each algorithm should be compiled
 //! for each color space and difference combination.
 
-use std::marker::PhantomData;
+use std::{
+    marker::PhantomData,
+    ops::{Add, Mul, Sub},
+};
 
 use image::RgbaImage;
 use palette::{
@@ -124,7 +127,7 @@ impl<C, D> Algorithm<C, D> for AlgoThreshold
 where
     Srgb: IntoColor<C>,
     C: Copy,
-    C: IntoColor<Srgb> ,
+    C: IntoColor<Srgb>,
     D: Difference<C>,
 {
     fn run(mut image: RgbaImage, palette: Palette<C>) -> RgbaImage {
@@ -169,6 +172,68 @@ where
             color.as_mut()[2] += rng.gen_range(-range_radius..=range_radius);
             let color = palette.nearest::<D>(color);
             util::update_pixel_with_color(pixel, color);
+        }
+        image
+    }
+}
+
+pub struct AlgoFloydSteinberg;
+
+impl AlgoFloydSteinberg {
+    fn update_pixel<C, D>(image: &mut RgbaImage, palette: &Palette<C>, x: u32, y: u32)
+    where
+        C: Copy,
+        C: IntoColor<Srgb>,
+        C: Sub<Output = C>,
+        D: Difference<C>,
+        Srgb: IntoColor<C>,
+        C: Add<Output = C>,
+        C: Mul<f32, Output = C>,
+    {
+        let pixel = image.get_pixel(x, y);
+        let before: C = util::pixel_to_color(*pixel);
+        let after = palette.nearest::<D>(before);
+        let error = after - before;
+
+        util::update_pixel_with_color(image.get_pixel_mut(x, y), after);
+        Self::diffuse_error(image, x + 1, y, error, 7.0 / 16.0);
+        if x > 0 {
+            Self::diffuse_error(image, x - 1, y + 1, error, 3.0 / 16.0);
+        }
+        Self::diffuse_error(image, x, y + 1, error, 5.0 / 16.0);
+        Self::diffuse_error(image, x + 1, y + 1, error, 1.0 / 16.0);
+    }
+
+    fn diffuse_error<C>(image: &mut RgbaImage, x: u32, y: u32, error: C, factor: f32)
+    where
+        C: Add<Output = C>,
+        C: IntoColor<Srgb>,
+        C: Mul<f32, Output = C>,
+        Srgb: IntoColor<C>,
+    {
+        if let Some(pixel) = image.get_pixel_mut_checked(x, y) {
+            let color: C = util::pixel_to_color(*pixel);
+            let color = color + error * factor;
+            util::update_pixel_with_color(pixel, color);
+        }
+    }
+}
+
+impl<C, D> Algorithm<C, D> for AlgoFloydSteinberg
+where
+    C: Add<Output = C>,
+    C: Copy,
+    C: IntoColor<Srgb>,
+    C: Mul<f32, Output = C>,
+    C: Sub<Output = C>,
+    D: Difference<C>,
+    Srgb: IntoColor<C>,
+{
+    fn run(mut image: RgbaImage, palette: Palette<C>) -> RgbaImage {
+        for y in 0..image.height() {
+            for x in 0..image.width() {
+                Self::update_pixel::<C, D>(&mut image, &palette, x, y);
+            }
         }
         image
     }
