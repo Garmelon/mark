@@ -11,6 +11,7 @@ enum BwMethod {
     SrgbAverage,
     LinSrgbAverage,
     Hsl,
+    Hsv,
     Cielab,
     Oklab,
 }
@@ -21,6 +22,7 @@ impl From<BwMethod> for mark::BwMethod {
             BwMethod::SrgbAverage => mark::BwMethod::SrgbAverage,
             BwMethod::LinSrgbAverage => mark::BwMethod::LinSrgbAverage,
             BwMethod::Hsl => mark::BwMethod::Hsl,
+            BwMethod::Hsv => mark::BwMethod::Hsv,
             BwMethod::Cielab => mark::BwMethod::Cielab,
             BwMethod::Oklab => mark::BwMethod::Oklab,
         }

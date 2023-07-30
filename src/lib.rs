@@ -1,11 +1,12 @@
 use image::RgbaImage;
-use palette::{Hsl, IntoColor, Lab, LinSrgb, Oklab, Srgb};
+use palette::{Hsl, Hsv, IntoColor, Lab, LinSrgb, Oklab, Srgb};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum BwMethod {
     SrgbAverage,
     LinSrgbAverage,
     Hsl,
+    Hsv,
     Cielab,
     Oklab,
 }
@@ -24,6 +25,11 @@ impl BwMethod {
             }
             Self::Hsl => {
                 let mut pixel: Hsl = pixel.into_color();
+                pixel.saturation = 0.0;
+                pixel.into_color()
+            }
+            Self::Hsv => {
+                let mut pixel: Hsv = pixel.into_color();
                 pixel.saturation = 0.0;
                 pixel.into_color()
             }
