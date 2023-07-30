@@ -1,3 +1,14 @@
+#![forbid(unsafe_code)]
+// Rustc lint groups
+#![warn(future_incompatible)]
+#![warn(rust_2018_idioms)]
+#![warn(unused)]
+// Rustc lints
+#![warn(noop_method_call)]
+#![warn(single_use_lifetimes)]
+// Clippy lints
+#![warn(clippy::use_self)]
+
 use std::{
     io::{Cursor, Read, Write},
     path::PathBuf,
@@ -20,12 +31,12 @@ enum BwMethod {
 impl From<BwMethod> for bw::Method {
     fn from(value: BwMethod) -> Self {
         match value {
-            BwMethod::SrgbAverage => bw::Method::SrgbAverage,
-            BwMethod::LinSrgbAverage => bw::Method::LinSrgbAverage,
-            BwMethod::Hsl => bw::Method::Hsl,
-            BwMethod::Hsv => bw::Method::Hsv,
-            BwMethod::Cielab => bw::Method::Cielab,
-            BwMethod::Oklab => bw::Method::Oklab,
+            BwMethod::SrgbAverage => Self::SrgbAverage,
+            BwMethod::LinSrgbAverage => Self::LinSrgbAverage,
+            BwMethod::Hsl => Self::Hsl,
+            BwMethod::Hsv => Self::Hsv,
+            BwMethod::Cielab => Self::Cielab,
+            BwMethod::Oklab => Self::Oklab,
         }
     }
 }
@@ -52,7 +63,7 @@ enum Cmd {
 impl Cmd {
     fn run(self, image: RgbaImage) -> RgbaImage {
         match self {
-            Cmd::Bw(cmd) => cmd.run(image),
+            Self::Bw(cmd) => cmd.run(image),
         }
     }
 }
