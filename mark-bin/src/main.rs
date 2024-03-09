@@ -216,7 +216,7 @@ impl DitherCmd {
             .map(|c| c.0.into_format().into_color())
             .collect::<Vec<C>>();
         let palette = Palette::<C>::new(colors);
-        A::run(image, palette)
+        A::run(image, &palette)
     }
 }
 

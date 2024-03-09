@@ -108,7 +108,7 @@ impl<C> Palette<C> {
 ////////////////
 
 pub trait Algorithm<C, D> {
-    fn run(image: RgbaImage, palette: Palette<C>) -> RgbaImage;
+    fn run(image: RgbaImage, palette: &Palette<C>) -> RgbaImage;
 }
 
 pub struct AlgoThreshold;
@@ -120,7 +120,7 @@ where
     C: IntoColor<Srgb>,
     D: Difference<C>,
 {
-    fn run(mut image: RgbaImage, palette: Palette<C>) -> RgbaImage {
+    fn run(mut image: RgbaImage, palette: &Palette<C>) -> RgbaImage {
         for pixel in image.pixels_mut() {
             let color: C = util::pixel_to_color(*pixel);
             let color = palette.nearest::<D>(color);
@@ -151,7 +151,7 @@ where
     C: IntoColor<Srgb>,
     D: Difference<C>,
 {
-    fn run(mut image: RgbaImage, palette: Palette<C>) -> RgbaImage {
+    fn run(mut image: RgbaImage, palette: &Palette<C>) -> RgbaImage {
         let mut rng = SmallRng::seed_from_u64(0);
         let range_radius = 1.0;
 
@@ -223,7 +223,7 @@ where
     D: Difference<C>,
     Srgb: IntoColor<C>,
 {
-    fn run(mut image: RgbaImage, palette: Palette<C>) -> RgbaImage {
+    fn run(mut image: RgbaImage, palette: &Palette<C>) -> RgbaImage {
         for y in 0..image.height() {
             for x in 0..image.width() {
                 let pixel = image.get_pixel(x, y);
@@ -253,7 +253,7 @@ where
     D: Difference<C>,
     Srgb: IntoColor<C>,
 {
-    fn run(mut image: RgbaImage, palette: Palette<C>) -> RgbaImage {
+    fn run(mut image: RgbaImage, palette: &Palette<C>) -> RgbaImage {
         for y in 0..image.height() {
             for x in 0..image.width() {
                 let pixel = image.get_pixel(x, y);
