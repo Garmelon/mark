@@ -1,0 +1,12 @@
+[package]
+name = "mark"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+image.workspace = true
+palette.workspace = true
+rand = { version = "0.8.5", features = ["small_rng"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,10 @@
+[package]
+name = "mark-bin"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+clap = { version = "4.3.19", features = ["derive", "deprecated"] }
+image.workspace = true
+mark.workspace = true
+palette.workspace = true

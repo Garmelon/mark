@@ -1,10 +1,21 @@
-[package]
-name = "mark"
+[workspace]
+resolver = "2"
+members = ["mark", "mark-bin"]
+
+[workspace.package]
 version = "0.0.0"
 edition = "2021"
 
-[dependencies]
-clap = { version = "4.3.19", features = ["derive", "deprecated"] }
+[workspace.dependencies]
 image = "0.24.6"
+mark.path = "./mark"
 palette = "0.7.2"
-rand = { version = "0.8.5", features = ["small_rng"] }
+
+[workspace.lints]
+rust.unsafe_code = "forbid"
+rust.future_incompatible = "warn"
+rust.rust_2018_idioms = "warn"
+rust.unused = "warn"
+rust.noop_method_call = "warn"
+rust.single_use_lifetimes = "warn"
+clippy.use_self = "warn"
