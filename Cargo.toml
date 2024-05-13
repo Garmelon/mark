@@ -7,9 +7,9 @@ version = "0.0.0"
 edition = "2021"
 
 [workspace.dependencies]
-image = "0.24.9"
+image = "0.25.1"
 mark.path = "./mark"
-palette = "0.7.5"
+palette = "0.7.6"
 
 [workspace.lints]
 rust.unsafe_code = "forbid"
