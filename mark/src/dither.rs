@@ -207,7 +207,9 @@ where
     }
     let x = (x as i32 + dx) as u32;
     let y = (y as i32 + dy) as u32;
-    let Some(pixel) = image.get_pixel_mut_checked(x, y) else{ return; };
+    let Some(pixel) = image.get_pixel_mut_checked(x, y) else {
+        return;
+    };
     let color: C = util::pixel_to_color(*pixel);
     let color = add(color, mul(error, factor));
     util::update_pixel_with_color(pixel, color);
