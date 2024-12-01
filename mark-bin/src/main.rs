@@ -103,14 +103,14 @@ struct SrgbColor(Srgb<u8>);
 
 #[derive(Debug)]
 enum ParseSrgbColorError {
-    ThreeValuesRequired,
+    MustBeSixHexDigits,
     ParseIntError(ParseIntError),
 }
 
 impl fmt::Display for ParseSrgbColorError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::ThreeValuesRequired => write!(f, "exactly three values must be specified"),
+            Self::MustBeSixHexDigits => write!(f, "a color must consist of six hexadecimal digits"),
             Self::ParseIntError(e) => e.fmt(f),
         }
     }
@@ -128,12 +128,16 @@ impl FromStr for SrgbColor {
     type Err = ParseSrgbColorError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts = s.split(',').collect::<Vec<_>>();
-        if let [r, g, b] = &*parts {
-            Ok(Self(Srgb::new(r.parse()?, g.parse()?, b.parse()?)))
-        } else {
-            Err(ParseSrgbColorError::ThreeValuesRequired)
+        if s.len() != 6 {
+            return Err(ParseSrgbColorError::MustBeSixHexDigits);
         }
+        if !s.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err(ParseSrgbColorError::MustBeSixHexDigits);
+        }
+        let r = u8::from_str_radix(&s[0..2], 16)?;
+        let g = u8::from_str_radix(&s[2..4], 16)?;
+        let b = u8::from_str_radix(&s[4..6], 16)?;
+        Ok(Self(Srgb::new(r, g, b)))
     }
 }
 
@@ -146,6 +150,7 @@ struct DitherCmd {
     color_space: DitherColorSpace,
     #[arg(long, short)]
     difference: DitherDifference,
+    /// Add a hex color to the palette used for dithering.
     #[arg(long, short)]
     palette: Vec<SrgbColor>,
 }
