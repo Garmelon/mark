@@ -19,7 +19,7 @@ use std::{
 };
 
 use clap::Parser;
-use image::{ImageFormat, RgbaImage};
+use image::{ImageFormat, ImageReader, RgbaImage};
 use mark::{
     bw,
     dither::{
@@ -252,7 +252,7 @@ struct Args {
 fn load_image(r#in: &Option<PathBuf>) -> RgbaImage {
     if let Some(path) = r#in {
         eprintln!("Loading image from {}", path.display());
-        image::io::Reader::open(path)
+        ImageReader::open(path)
             .expect("failed to load image from file")
             .decode()
             .expect("failed to decode image data")
@@ -262,7 +262,7 @@ fn load_image(r#in: &Option<PathBuf>) -> RgbaImage {
         std::io::stdin()
             .read_to_end(&mut buf)
             .expect("failed to read stdin");
-        image::io::Reader::new(Cursor::new(buf))
+        ImageReader::new(Cursor::new(buf))
             .with_guessed_format()
             .expect("failed to guess image format")
             .decode()
