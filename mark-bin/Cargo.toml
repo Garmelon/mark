@@ -4,7 +4,10 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-clap = { version = "4.5.4", features = ["derive", "deprecated"] }
+clap.workspace = true
 image.workspace = true
 mark.workspace = true
 palette.workspace = true
+
+[lints]
+workspace = true

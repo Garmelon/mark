@@ -7,9 +7,11 @@ version = "0.0.0"
 edition = "2021"
 
 [workspace.dependencies]
-image = "0.25.1"
+clap = { version = "4.5.21", features = ["derive", "deprecated"] }
+image = "0.25.5"
 mark.path = "./mark"
 palette = "0.7.6"
+rand = { version = "0.8.5", features = ["small_rng"] }
 
 [workspace.lints]
 rust.unsafe_code = { level = "forbid", priority = 1 }
