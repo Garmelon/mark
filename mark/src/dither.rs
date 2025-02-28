@@ -157,9 +157,9 @@ where
 
         for pixel in image.pixels_mut() {
             let mut color: C = util::pixel_to_color(*pixel);
-            color.as_mut()[0] += rng.gen_range(-range_radius..=range_radius);
-            color.as_mut()[1] += rng.gen_range(-range_radius..=range_radius);
-            color.as_mut()[2] += rng.gen_range(-range_radius..=range_radius);
+            color.as_mut()[0] += rng.random_range(-range_radius..=range_radius);
+            color.as_mut()[1] += rng.random_range(-range_radius..=range_radius);
+            color.as_mut()[2] += rng.random_range(-range_radius..=range_radius);
             let color = palette.nearest::<D>(color);
             util::update_pixel_with_color(pixel, color);
         }
