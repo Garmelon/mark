@@ -1,13 +1,13 @@
 [package]
 name = "mark-bin"
-version.workspace = true
-edition.workspace = true
+version = { workspace = true }
+edition = { workspace = true }
 
 [dependencies]
-clap.workspace = true
-image.workspace = true
-mark.workspace = true
-palette.workspace = true
+clap = { workspace = true }
+image = { workspace = true }
+mark = { workspace = true }
+palette = { workspace = true }
 
 [lints]
 workspace = true

@@ -9,10 +9,10 @@ use std::marker::PhantomData;
 
 use image::RgbaImage;
 use palette::{
-    color_difference::{Ciede2000, HyAb},
     Clamp, IntoColor, Lab, Srgb,
+    color_difference::{Ciede2000, HyAb},
 };
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+use rand::{Rng, SeedableRng, rngs::SmallRng};
 
 use crate::util;
 

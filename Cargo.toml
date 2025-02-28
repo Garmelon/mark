@@ -1,10 +1,10 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = ["mark", "mark-bin"]
 
 [workspace.package]
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 
 [workspace.dependencies]
 clap = { version = "4.5.21", features = ["derive", "deprecated"] }
@@ -28,7 +28,6 @@ rust.redundant_imports = "warn"
 rust.redundant_lifetimes = "warn"
 rust.single_use_lifetimes = "warn"
 rust.unit_bindings = "warn"
-rust.unnameable_types = "warn"
 rust.unused_crate_dependencies = "warn"
 rust.unused_import_braces = "warn"
 rust.unused_lifetimes = "warn"

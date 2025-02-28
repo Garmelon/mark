@@ -1,12 +1,12 @@
 [package]
 name = "mark"
-version.workspace = true
-edition.workspace = true
+version = { workspace = true }
+edition = { workspace = true }
 
 [dependencies]
-image.workspace = true
-palette.workspace = true
-rand.workspace = true
+image = { workspace = true }
+palette = { workspace = true }
+rand = { workspace = true }
 
 [lints]
 workspace = true
