@@ -9,8 +9,8 @@ use std::marker::PhantomData;
 
 use image::RgbaImage;
 use palette::{
-    Clamp, IntoColor, Lab, Srgb,
-    color_difference::{Ciede2000, HyAb},
+    Clamp, IntoColor, Lab, Oklab, Srgb,
+    color_difference::{Ciede2000, EuclideanDistance, HyAb},
 };
 use rand::{Rng, SeedableRng, rngs::SmallRng};
 
@@ -62,6 +62,16 @@ impl<C: IntoColor<Lab>> Difference<C> for DiffCiede2000 {
         let a: Lab = a.into_color();
         let b: Lab = b.into_color();
         a.difference(b)
+    }
+}
+
+pub struct DiffOklab;
+
+impl<C: IntoColor<Oklab>> Difference<C> for DiffOklab {
+    fn diff(a: C, b: C) -> f32 {
+        let a: Oklab = a.into_color();
+        let b: Oklab = b.into_color();
+        a.distance(b)
     }
 }
 

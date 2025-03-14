@@ -94,6 +94,8 @@ enum DitherDifference {
     HyAbClamp,
     Ciede2000,
     Ciede2000Clamp,
+    Oklab,
+    OklabClamp,
     Manhattan,
     ManhattanClamp,
 }
@@ -187,6 +189,8 @@ impl DitherCmd {
             HyAbClamp => self.run_cd::<C, DiffClamp<DiffHyAb>>(image),
             Ciede2000 => self.run_cd::<C, DiffCiede2000>(image),
             Ciede2000Clamp => self.run_cd::<C, DiffClamp<DiffCiede2000>>(image),
+            Oklab => self.run_cd::<C, DiffCiede2000>(image),
+            OklabClamp => self.run_cd::<C, DiffClamp<DiffCiede2000>>(image),
             Manhattan => self.run_cd::<C, DiffManhattan>(image),
             ManhattanClamp => self.run_cd::<C, DiffClamp<DiffManhattan>>(image),
         }
